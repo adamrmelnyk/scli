@@ -1,0 +1,13 @@
+[package]
+name = "sonosProject"
+version = "0.1.0"
+authors = ["Adam Melnyk <adam@adammelnyk.ca>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sonor = "0.1.2"
+tokio = { version = "0.2", features = ["macros", "time"]}
+futures = "0.3"
+structopt = { version = "0.3", default-features = false }
