@@ -26,7 +26,7 @@ enum Cli {
 async fn main() -> Result<(), sonor::Error> {
     let args = Cli::from_args();
     return match args {
-         Cli::Info => info().await,
+        Cli::Info => info().await,
         Cli::Stop { name } => stop(name).await,
         Cli::Play { name } => play(name).await,
         Cli::Pause { name } => pause(name).await,
@@ -57,35 +57,29 @@ async fn info() -> Result<(), sonor::Error> {
 async fn stop(name: String) -> Result<(), sonor::Error> {
     let speaker = sonor::find(&name, Duration::from_secs(2)).await?
             .expect("room exists");
-    speaker.stop().await?;
-
-    Ok(())
+    return speaker.stop().await;
 }
 
 async fn play(name: String) -> Result<(), sonor::Error> {
     let speaker = sonor::find(&name, Duration::from_secs(2)).await?
     .expect("room exists");
-    speaker.play().await?;
-    Ok(())
+    return speaker.play().await;
 }
 
 async fn pause(name: String) -> Result<(), sonor::Error> {
     let speaker = sonor::find(&name, Duration::from_secs(2)).await?
     .expect("room exists");
-    speaker.pause().await?;
-    Ok(())
+    return speaker.pause().await;
 }
 
 async fn next(name: String) -> Result<(), sonor::Error> {
     let speaker = sonor::find(&name, Duration::from_secs(2)).await?
     .expect("room exists");
-    speaker.next().await?;
-    Ok(())
+    return speaker.next().await;
 }
 
 async fn previous(name: String) -> Result<(), sonor::Error> {
     let speaker = sonor::find(&name, Duration::from_secs(2)).await?
     .expect("room exists");
-    speaker.previous().await?;
-    Ok(())
+    return speaker.previous().await;
 }
