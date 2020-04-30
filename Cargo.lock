@@ -513,7 +513,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "sonosProject"
+name = "sonos_tool"
 version = "0.1.0"
 dependencies = [
  "futures",
