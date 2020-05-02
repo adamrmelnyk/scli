@@ -45,8 +45,8 @@ enum Command {
         name: String,
     },
     #[structopt(
-        about = "Displays the volume for a specified room",
-        help = "USAGE: volume MyRoomName"
+        about = "Displays the track for a specified room",
+        help = "USAGE: track MyRoomName"
     )]
     Track {
         name: String,
@@ -65,8 +65,39 @@ enum Command {
     SetVolume {
         name: String,
         volume: u16,
+    },
+    #[structopt(
+        about = "Displays the currently queued tracks",
+        help = "USAGE: queue MyRoomName"
+    )]
+    Queue {
+        name: String,
+    },
+    #[structopt(
+        about = "Mutes speaker if unmuted, Unmutes if muted",
+        help = "USAGE: mute MyRoomName"
+    )]
+    Mute {
+        name: String,
+    },
+    #[structopt(
+        about = "Displays bass level, optionaly sets bass level",
+        help = "USAGE: bass MyRoomName OR bass MyRoomName bass 1"
+    )]
+    Bass {
+        name: String,
+        opt: Option<i8>,
+    },
+    #[structopt(
+        about = "Displays treble level, optionaly sets treble level",
+        help = "USAGE: treble MyRoomName OR treble MyRoomName bass 1"
+    )]
+    Treble {
+        name: String,
+        opt: Option<i8>,
     }
 }
+
 
 #[tokio::main]
 async fn main() -> Result<(), sonor::Error> {
@@ -81,6 +112,10 @@ async fn main() -> Result<(), sonor::Error> {
         Command::Track { name } => track(name).await,
         Command::Volume { name } => volume(name).await,
         Command::SetVolume { name, volume} => set_volume(name, volume).await,
+        Command::Queue { name } => queue(name).await,
+        Command::Mute { name } => mute(name).await,
+        Command::Bass { name, opt } => bass(name, opt).await,
+        Command::Treble { name, opt } => treble(name, opt).await,
     }
 }
 
@@ -102,7 +137,7 @@ async fn info() -> Result<(), sonor::Error> {
                 println!("Volume: {}", speaker.volume().await?);
             }
         }
-                    println!("----------");
+        println!("----------");
     }
 
     Ok(())
@@ -162,4 +197,58 @@ async fn set_volume(name: String, volume: u16) -> Result<(), sonor::Error> {
     let speaker = sonor::find(&name, Duration::from_secs(2)).await?
         .expect("room exists");
     return speaker.set_volume(volume).await;
+}
+
+async fn queue(name: String) -> Result<(), sonor::Error> {
+    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
+        .expect("room exists");
+    match speaker.queue().await {
+        Ok(q) => for (i,t) in q.iter().enumerate() { println!("{}. {}", i, t.title()) },
+        Err(_) => println!("Empty Queue"),
+    }
+    Ok(())
+}
+
+async fn mute(name: String) -> Result<(), sonor::Error> {
+    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
+        .expect("room exists");
+    match speaker.mute().await {
+        Ok(is_muted) => {
+            return speaker.set_mute(!is_muted).await;
+        },
+        Err(_) => println!("Error: unable to mute"),
+    }
+    Ok(())
+}
+
+async fn bass(name: String, opt: Option<i8>) -> Result<(), sonor::Error> {
+    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
+        .expect("room exists");
+    match opt {
+        Some(opt) => match speaker.set_bass(opt).await {
+            Ok(_) => println!("bass now at: {}", opt),
+            Err(_) => println!("Error: could not set bass"),
+        }
+        None => match speaker.bass().await {
+            Ok(bass) => println!("The bass is currently set at {} on {}", bass, name),
+            Err(_) => println!("Error: could not get bass"),
+        }
+    }
+    Ok(())
+}
+
+async fn treble(name: String, opt: Option<i8>) -> Result<(), sonor::Error> {
+    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
+        .expect("room exists");
+    match opt {
+        Some(opt) => match speaker.set_treble(opt).await {
+            Ok(_) => println!("treble now at: {}", opt),
+            Err(_) => println!("Error: could not set treble"),
+        }
+        None => match speaker.treble().await {
+            Ok(bass) => println!("The treble is currently set at {} on {}", bass, name),
+            Err(_) => println!("Error: could not get treble"),
+        }
+    }
+    Ok(())
 }
