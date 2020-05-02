@@ -4,7 +4,7 @@ use structopt::StructOpt;
 
 #[derive(StructOpt)]
 #[structopt(rename_all = "kebab-case")]
-enum Cli {
+enum Command {
     #[structopt(
         about = "Displays info about all rooms",
         help = "USAGE: info"
@@ -70,17 +70,17 @@ enum Cli {
 
 #[tokio::main]
 async fn main() -> Result<(), sonor::Error> {
-    let args = Cli::from_args();
+    let args = Command::from_args();
     return match args {
-        Cli::Info => info().await,
-        Cli::Stop { name } => stop(name).await,
-        Cli::Play { name } => play(name).await,
-        Cli::Pause { name } => pause(name).await,
-        Cli::Next { name } => next(name).await,
-        Cli::Previous { name } => previous(name).await,
-        Cli::Track { name } => track(name).await,
-        Cli::Volume { name } => volume(name).await,
-        Cli::SetVolume { name, volume} => set_volume(name, volume).await,
+        Command::Info => info().await,
+        Command::Stop { name } => stop(name).await,
+        Command::Play { name } => play(name).await,
+        Command::Pause { name } => pause(name).await,
+        Command::Next { name } => next(name).await,
+        Command::Previous { name } => previous(name).await,
+        Command::Track { name } => track(name).await,
+        Command::Volume { name } => volume(name).await,
+        Command::SetVolume { name, volume} => set_volume(name, volume).await,
     }
 }
 
@@ -93,11 +93,16 @@ async fn info() -> Result<(), sonor::Error> {
             .expect("room exists");
         match speaker.track().await? {
             Some(track_info) => {
-                println!("The volume is currently at {} on {}", speaker.volume().await?, name);
-                println!("- Currently playing '{} on '{}", track_info.track(), name);
+                println!("Room: {}", name);
+                println!("Volume: {}", speaker.volume().await?);
+                println!("Track: {}", track_info.track());
             }
-            None => println!("- No track currently playing on {}", name),
+            None => {
+                println!("Room: {}", name);
+                println!("Volume: {}", speaker.volume().await?);
+            }
         }
+                    println!("----------");
     }
 
     Ok(())
