@@ -1,6 +1,7 @@
 use futures::prelude::*;
 use std::time::Duration;
 use structopt::StructOpt;
+use sonor::Speaker;
 
 #[derive(StructOpt)]
 #[structopt(rename_all = "kebab-case")]
@@ -144,33 +145,38 @@ async fn info() -> Result<(), sonor::Error> {
 }
 
 async fn stop(name: String) -> Result<(), sonor::Error> {
-    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
-            .expect("room exists");
-    return speaker.stop().await;
+    return match get_speaker(name).await {
+        Some(speaker) => speaker.stop().await,
+        None => Ok(()),
+    }
 }
 
 async fn play(name: String) -> Result<(), sonor::Error> {
-    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
-        .expect("room exists");
-    return speaker.play().await;
+    return match get_speaker(name).await {
+        Some(speaker) => speaker.play().await,
+        None => Ok(()),
+    }
 }
 
 async fn pause(name: String) -> Result<(), sonor::Error> {
-    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
-        .expect("room exists");
-    return speaker.pause().await;
+    return match get_speaker(name).await {
+        Some(speaker) => speaker.pause().await,
+        None => Ok(()),
+    }
 }
 
 async fn next(name: String) -> Result<(), sonor::Error> {
-    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
-        .expect("room exists");
-    return speaker.next().await;
+    return match get_speaker(name).await {
+        Some(speaker) => speaker.next().await,
+        None => Ok(()),
+    }
 }
 
 async fn previous(name: String) -> Result<(), sonor::Error> {
-    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
-        .expect("room exists");
-    return speaker.previous().await;
+    return match get_speaker(name).await {
+        Some(speaker) => speaker.previous().await,
+        None => Ok(()),
+    }
 }
 
 async fn track(name: String) -> Result<(), sonor::Error> {
@@ -194,9 +200,10 @@ async fn volume(name: String) -> Result<(), sonor::Error> {
 }
 
 async fn set_volume(name: String, volume: u16) -> Result<(), sonor::Error> {
-    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
-        .expect("room exists");
-    return speaker.set_volume(volume).await;
+    return match get_speaker(name).await {
+        Some(speaker) => speaker.set_volume(volume).await,
+        None => Ok(()),
+    }
 }
 
 async fn queue(name: String) -> Result<(), sonor::Error> {
@@ -251,4 +258,14 @@ async fn treble(name: String, opt: Option<i8>) -> Result<(), sonor::Error> {
         }
     }
     Ok(())
+}
+
+async fn get_speaker(name: String) -> Option<Speaker> {
+    match sonor::find(&name, Duration::from_secs(2)).await {
+        Ok(opt) => return opt,
+        Err(_) => {
+            println!("Unable to find Speaker `{}, try using the `info` commmand to list devices", name);
+            return None;
+        },
+    }
 }
