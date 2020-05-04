@@ -96,9 +96,48 @@ enum Command {
     Treble {
         name: String,
         opt: Option<i8>,
+    },
+    #[structopt(
+        about = "Sets loudness on if off, Loudness off if on",
+        help = "USAGE: loudness MyRoomName",
+    )]
+    Loudness {
+        name: String,
+    },
+    #[structopt(
+        about = "Removes specified track in queue (Tracks are zero-indexed)",
+        help = "USAGE: remove-track MyRoomName 10",
+    )]
+    RemoveTrack {
+        name: String,
+        track_no: u32,
+    },
+    #[structopt(
+        about = "Queues a new track at the top of the queue",
+        help = "USAGE queue-next MyRoomName myuri metadata",
+    )]
+    QueueNext {
+        name: String,
+        uri: String,
+        metadata: String,
+    },
+    #[structopt(
+        about = "Queues a new track at the end of the queue",
+        help = "USAGE: queue-end MyRoomName myuri metadata",
+    )]
+    QueueEnd {
+        name: String,
+        uri: String,
+        metadata: String
+    },
+    #[structopt(
+        about= "Clears the queue",
+        help = "USAGE: clear-queue MyRoomName myuri metadata",
+    )]
+    ClearQueue {
+        name: String,
     }
 }
-
 
 #[tokio::main]
 async fn main() -> Result<(), sonor::Error> {
@@ -117,6 +156,11 @@ async fn main() -> Result<(), sonor::Error> {
         Command::Mute { name } => mute(name).await,
         Command::Bass { name, opt } => bass(name, opt).await,
         Command::Treble { name, opt } => treble(name, opt).await,
+        Command::Loudness { name } => loudness(name).await,
+        Command::RemoveTrack { name, track_no } => remove_track(name, track_no).await,
+        Command::QueueNext { name, uri, metadata } => queue_next(name, uri, metadata).await,
+        Command::QueueEnd {name, uri, metadata } => queue_end(name, uri, metadata).await,
+        Command::ClearQueue { name } => clear_queue(name).await,
     }
 }
 
@@ -216,6 +260,34 @@ async fn queue(name: String) -> Result<(), sonor::Error> {
     Ok(())
 }
 
+async fn remove_track(name: String, track_no: u32) -> Result<(), sonor::Error>{
+    return match get_speaker(name).await {
+        Some(speaker) => speaker.remove_track(track_no).await,
+        None => Ok(()),
+    }
+}
+
+async fn queue_next(name: String, uri: String, metadata: String) -> Result<(), sonor::Error> {
+    return match get_speaker(name).await {
+        Some(speaker) => speaker.queue_next(Box::leak(uri.into_boxed_str()), Box::leak(metadata.into_boxed_str())).await,
+        None => Ok(()),
+    }
+}
+
+async fn queue_end(name: String, uri: String, metadata: String) -> Result<(), sonor::Error> {
+    return match get_speaker(name).await {
+        Some(speaker) => speaker.queue_end(Box::leak(uri.into_boxed_str()), Box::leak(metadata.into_boxed_str())).await,
+        None => Ok(()),
+    }
+}
+
+async fn clear_queue(name: String) -> Result<(), sonor::Error> {
+    return match get_speaker(name).await {
+        Some(speaker) => speaker.clear_queue().await,
+        None => Ok(()),
+    }
+}
+
 async fn mute(name: String) -> Result<(), sonor::Error> {
     let speaker = sonor::find(&name, Duration::from_secs(2)).await?
         .expect("room exists");
@@ -256,6 +328,18 @@ async fn treble(name: String, opt: Option<i8>) -> Result<(), sonor::Error> {
             Ok(bass) => println!("The treble is currently set at {} on {}", bass, name),
             Err(_) => println!("Error: could not get treble"),
         }
+    }
+    Ok(())
+}
+
+async fn loudness(name: String) -> Result<(), sonor::Error> {
+    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
+        .expect("room exists");
+    match speaker.loudness().await {
+        Ok(is_loudness) => {
+            return speaker.set_loudness(!is_loudness).await;
+        },
+        Err(_) => println!("Error: unable to get loudness"),
     }
     Ok(())
 }
