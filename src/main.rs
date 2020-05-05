@@ -2,6 +2,7 @@ use futures::prelude::*;
 use std::time::Duration;
 use structopt::StructOpt;
 use sonor::Speaker;
+use sonor::RepeatMode;
 
 #[derive(StructOpt)]
 #[structopt(rename_all = "kebab-case")]
@@ -136,6 +137,49 @@ enum Command {
     )]
     ClearQueue {
         name: String,
+    },
+    #[structopt(
+        about = "Sets shuffle on if off, off if on",
+        help = "USAGE: shuffle MyRoomName",
+    )]
+    Shuffle {
+        name: String,
+    },
+    #[structopt(
+        about = "Sets repeat all on (repeats queue)",
+        help = "USAGE: repeat-all MyRoomName",
+    )]
+    RepeatAll {
+        name: String,
+    },
+    #[structopt(
+        about = "Sets repeat one on (repeats one track)",
+        help = "USAGE: repeat-one MyRoomName",
+    )]
+    RepeatOne {
+        name: String,
+    },
+    #[structopt(
+        about = "Sets repeat off",
+        help = "USAGE: repeat-off MyRoomName",
+    )]
+    RepeatOff {
+        name: String,
+    },
+    #[structopt(
+        about = "Joins one speaker to another speaker group",
+        help = "USAGE: join MyRoomName RoomToJoin",
+    )]
+    Join {
+        name: String,
+        speaker_to_join: String,
+    },
+    #[structopt(
+        about = "Specified speaker will leave any group it's currently in",
+        help = "USAGE: leave MyRoomName",
+    )]
+    Leave {
+        name: String,
     }
 }
 
@@ -161,6 +205,12 @@ async fn main() -> Result<(), sonor::Error> {
         Command::QueueNext { name, uri, metadata } => queue_next(name, uri, metadata).await,
         Command::QueueEnd {name, uri, metadata } => queue_end(name, uri, metadata).await,
         Command::ClearQueue { name } => clear_queue(name).await,
+        Command::Shuffle { name } => shuffle(name).await,
+        Command::RepeatAll { name } => repeat_all(name).await,
+        Command::RepeatOne { name } => repeat_one(name).await,
+        Command::RepeatOff { name } => repeat_off(name).await,
+        Command::Join { name, speaker_to_join } => join(name, speaker_to_join).await,
+        Command::Leave { name } => leave(name).await,
     }
 }
 
@@ -342,6 +392,57 @@ async fn loudness(name: String) -> Result<(), sonor::Error> {
         Err(_) => println!("Error: unable to get loudness"),
     }
     Ok(())
+}
+
+async fn shuffle(name: String) -> Result<(), sonor::Error> {
+    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
+        .expect("room exists");
+    match speaker.shuffle().await {
+        Ok(on_shuffle) => return speaker.set_shuffle(!on_shuffle).await,
+        Err(_) => println!("Error: unable to get shuffle mode"),
+    }
+    Ok(())
+}
+
+async fn repeat_all(name: String) -> Result<(), sonor::Error> {
+    match get_speaker(name).await {
+        Some(speaker) => speaker.set_repeat_mode(RepeatMode::All).await,
+        None => Ok(()),
+    }
+}
+
+async fn repeat_one(name: String) -> Result<(), sonor::Error> {
+    match get_speaker(name).await {
+        Some(speaker) => speaker.set_repeat_mode(RepeatMode::One).await,
+        None => Ok(()),
+    }
+}
+
+async fn repeat_off(name: String) -> Result<(), sonor::Error> {
+    match get_speaker(name).await {
+        Some(speaker) => speaker.set_repeat_mode(RepeatMode::None).await,
+        None => Ok(()),
+    }
+}
+
+async fn join(name: String, speaker_to_join: String) -> Result<(), sonor::Error> {
+    match get_speaker(name).await {
+        Some(speaker) => match speaker.join(&speaker_to_join).await {
+            Ok(joined) => {
+                println!("joined {}: {}", speaker_to_join, joined);
+                return Ok(());
+            }
+            Err(_) => Ok(()),
+        },
+        None => Ok(()),
+    }
+}
+
+async fn leave(name: String) -> Result<(), sonor::Error> {
+    match get_speaker(name).await {
+        Some(speaker) => speaker.leave().await,
+        None => Ok(())
+    }
 }
 
 async fn get_speaker(name: String) -> Option<Speaker> {
