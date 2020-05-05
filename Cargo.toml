@@ -1,5 +1,5 @@
 [package]
-name = "sonos_tool"
+name = "scli"
 version = "0.1.0"
 authors = ["Adam Melnyk <adam@adammelnyk.ca>"]
 edition = "2018"

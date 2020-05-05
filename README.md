@@ -1,12 +1,12 @@
-# sonos_tool
+# SCLI
 
 A CLI tool for messing around with my sonos speakers
 
 ```sh
-sonos_tool 0.1.0
+scli 0.1.0
 
 USAGE:
-    sonos_tool <SUBCOMMAND>
+    scli <SUBCOMMAND>
 
 FLAGS:
     -h, --help       Prints help information
