@@ -18,7 +18,7 @@ SUBCOMMANDS:
     help            Prints this message or the help of the given subcommand(s)
     info            Displays info about all rooms
     join            Joins one speaker to another speaker group
-    leave           Specified speaker will leave any group it's currently in
+    leave           Specified speaker will leave any group it is currently in
     loudness        Sets loudness on if off, Loudness off if on
     mute            Mutes speaker if unmuted, Unmutes if muted
     next            Skips to the next track for a specified room
