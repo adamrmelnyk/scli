@@ -34,6 +34,8 @@ SUBCOMMANDS:
     repeat-one      Sets repeat one on (repeats one track)
     set-volume      Sets the volume for a specified room
     shuffle         Sets shuffle on if off, off if on
+    skip            Skips the current playing track a specified number of seconds
+    skip-to         Skips the current playing track to a specified time
     stop            Stops specified room
     track           Displays the track for a specified room
     treble          Displays treble level, optionaly sets treble level

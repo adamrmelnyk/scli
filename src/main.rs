@@ -188,6 +188,14 @@ enum Command {
     Skip {
         name: String,
         seconds: i32,
+    },
+    #[structopt(
+        about = "Skips the current playing track to a specified time",
+        help = "USAGE: skip-to MyRoomName 30",
+    )]
+    SkipTo {
+        name: String,
+        seconds: u32,
     }
 }
 
@@ -219,7 +227,8 @@ async fn main() -> Result<(), sonor::Error> {
         Command::RepeatOff { name } => repeat_off(name).await,
         Command::Join { name, speaker_to_join } => join(name, speaker_to_join).await,
         Command::Leave { name } => leave(name).await,
-        Command::Skip {name, seconds } => skip(name, seconds).await,
+        Command::Skip { name, seconds } => skip(name, seconds).await,
+        Command::SkipTo { name, seconds } => skip_to(name, seconds).await,
     }
 }
 
@@ -458,6 +467,13 @@ async fn skip(name: String, seconds: i32) -> Result<(), sonor::Error> {
     match get_speaker(name).await {
         Some(speaker) => speaker.skip_by(seconds).await,
         None => { speaker_not_found(); Ok(())},
+    }
+}
+
+async fn skip_to(name: String, seconds: u32) -> Result<(), sonor::Error> {
+    match get_speaker(name).await {
+        Some(speaker) => speaker.skip_to(seconds).await,
+        None => { speaker_not_found(); Ok(()) }
     }
 }
 
