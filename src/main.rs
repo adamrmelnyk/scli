@@ -180,6 +180,14 @@ enum Command {
     )]
     Leave {
         name: String,
+    },
+    #[structopt(
+        about = "Skips the current playing track a specified number of seconds",
+        help = "USAGE: skip MyRoomName 10"
+    )]
+    Skip {
+        name: String,
+        seconds: i32,
     }
 }
 
@@ -211,6 +219,7 @@ async fn main() -> Result<(), sonor::Error> {
         Command::RepeatOff { name } => repeat_off(name).await,
         Command::Join { name, speaker_to_join } => join(name, speaker_to_join).await,
         Command::Leave { name } => leave(name).await,
+        Command::Skip {name, seconds } => skip(name, seconds).await,
     }
 }
 
@@ -241,35 +250,35 @@ async fn info() -> Result<(), sonor::Error> {
 async fn stop(name: String) -> Result<(), sonor::Error> {
     return match get_speaker(name).await {
         Some(speaker) => speaker.stop().await,
-        None => Ok(()),
+        None => { speaker_not_found(); Ok(())},
     }
 }
 
 async fn play(name: String) -> Result<(), sonor::Error> {
     return match get_speaker(name).await {
         Some(speaker) => speaker.play().await,
-        None => Ok(()),
+        None => { speaker_not_found(); Ok(())},
     }
 }
 
 async fn pause(name: String) -> Result<(), sonor::Error> {
     return match get_speaker(name).await {
         Some(speaker) => speaker.pause().await,
-        None => Ok(()),
+        None => { speaker_not_found(); Ok(())},
     }
 }
 
 async fn next(name: String) -> Result<(), sonor::Error> {
     return match get_speaker(name).await {
         Some(speaker) => speaker.next().await,
-        None => Ok(()),
+        None => { speaker_not_found(); Ok(())},
     }
 }
 
 async fn previous(name: String) -> Result<(), sonor::Error> {
     return match get_speaker(name).await {
         Some(speaker) => speaker.previous().await,
-        None => Ok(()),
+        None => { speaker_not_found(); Ok(())},
     }
 }
 
@@ -296,7 +305,7 @@ async fn volume(name: String) -> Result<(), sonor::Error> {
 async fn set_volume(name: String, volume: u16) -> Result<(), sonor::Error> {
     return match get_speaker(name).await {
         Some(speaker) => speaker.set_volume(volume).await,
-        None => Ok(()),
+        None => { speaker_not_found(); Ok(())},
     }
 }
 
@@ -313,28 +322,28 @@ async fn queue(name: String) -> Result<(), sonor::Error> {
 async fn remove_track(name: String, track_no: u32) -> Result<(), sonor::Error>{
     return match get_speaker(name).await {
         Some(speaker) => speaker.remove_track(track_no).await,
-        None => Ok(()),
+        None => { speaker_not_found(); Ok(())},
     }
 }
 
 async fn queue_next(name: String, uri: String, metadata: String) -> Result<(), sonor::Error> {
     return match get_speaker(name).await {
         Some(speaker) => speaker.queue_next(Box::leak(uri.into_boxed_str()), Box::leak(metadata.into_boxed_str())).await,
-        None => Ok(()),
+        None => { speaker_not_found(); Ok(())},
     }
 }
 
 async fn queue_end(name: String, uri: String, metadata: String) -> Result<(), sonor::Error> {
     return match get_speaker(name).await {
         Some(speaker) => speaker.queue_end(Box::leak(uri.into_boxed_str()), Box::leak(metadata.into_boxed_str())).await,
-        None => Ok(()),
+        None => { speaker_not_found(); Ok(())},
     }
 }
 
 async fn clear_queue(name: String) -> Result<(), sonor::Error> {
     return match get_speaker(name).await {
         Some(speaker) => speaker.clear_queue().await,
-        None => Ok(()),
+        None => { speaker_not_found(); Ok(())},
     }
 }
 
@@ -407,21 +416,21 @@ async fn shuffle(name: String) -> Result<(), sonor::Error> {
 async fn repeat_all(name: String) -> Result<(), sonor::Error> {
     match get_speaker(name).await {
         Some(speaker) => speaker.set_repeat_mode(RepeatMode::All).await,
-        None => Ok(()),
+        None => { speaker_not_found(); Ok(())},
     }
 }
 
 async fn repeat_one(name: String) -> Result<(), sonor::Error> {
     match get_speaker(name).await {
         Some(speaker) => speaker.set_repeat_mode(RepeatMode::One).await,
-        None => Ok(()),
+        None => { speaker_not_found(); Ok(())},
     }
 }
 
 async fn repeat_off(name: String) -> Result<(), sonor::Error> {
     match get_speaker(name).await {
         Some(speaker) => speaker.set_repeat_mode(RepeatMode::None).await,
-        None => Ok(()),
+        None => { speaker_not_found(); Ok(())},
     }
 }
 
@@ -441,15 +450,26 @@ async fn join(name: String, speaker_to_join: String) -> Result<(), sonor::Error>
 async fn leave(name: String) -> Result<(), sonor::Error> {
     match get_speaker(name).await {
         Some(speaker) => speaker.leave().await,
-        None => Ok(())
+        None => { speaker_not_found(); Ok(())},
     }
+}
+
+async fn skip(name: String, seconds: i32) -> Result<(), sonor::Error> {
+    match get_speaker(name).await {
+        Some(speaker) => speaker.skip_by(seconds).await,
+        None => { speaker_not_found(); Ok(())},
+    }
+}
+
+fn speaker_not_found() {
+    println!("No speaker found with that name\ntry using the `info` command to list discoverable devices")
 }
 
 async fn get_speaker(name: String) -> Option<Speaker> {
     match sonor::find(&name, Duration::from_secs(2)).await {
         Ok(opt) => return opt,
         Err(_) => {
-            println!("Unable to find Speaker `{}, try using the `info` commmand to list devices", name);
+            println!("Error finding speakers: {}", name);
             return None;
         },
     }
