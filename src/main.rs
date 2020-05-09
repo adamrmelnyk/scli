@@ -357,15 +357,15 @@ async fn clear_queue(name: String) -> Result<(), sonor::Error> {
 }
 
 async fn mute(name: String) -> Result<(), sonor::Error> {
-    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
-        .expect("room exists");
-    match speaker.mute().await {
-        Ok(is_muted) => {
-            return speaker.set_mute(!is_muted).await;
+    match get_speaker(name).await {
+        Some(speaker) => match speaker.mute().await {
+            Ok(is_muted) => {
+                return speaker.set_mute(!is_muted).await;
+            },
+            Err(_) => { println!("Error: unable to check if muted"); Ok(()) },
         },
-        Err(_) => println!("Error: unable to mute"),
+        None => { speaker_not_found(); Ok(()) },
     }
-    Ok(())
 }
 
 async fn bass(name: String, opt: Option<i8>) -> Result<(), sonor::Error> {
@@ -484,8 +484,8 @@ fn speaker_not_found() {
 async fn get_speaker(name: String) -> Option<Speaker> {
     match sonor::find(&name, Duration::from_secs(2)).await {
         Ok(opt) => return opt,
-        Err(_) => {
-            println!("Error finding speakers: {}", name);
+        Err(err) => {
+            eprintln!("Error: {}", err);
             return None;
         },
     }
