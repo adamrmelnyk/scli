@@ -175,7 +175,7 @@ enum Command {
         speaker_to_join: String,
     },
     #[structopt(
-        about = "Specified speaker will leave any group it's currently in",
+        about = "Specified speaker will leave any group it is currently in",
         help = "USAGE: leave MyRoomName",
     )]
     Leave {
@@ -292,23 +292,23 @@ async fn previous(name: String) -> Result<(), sonor::Error> {
 }
 
 async fn track(name: String) -> Result<(), sonor::Error> {
-    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
-        .expect("room exists");
-    match speaker.track().await? {
-        Some(track_info) => println!("- Currently playing '{} on '{}", track_info.track(), name),
-        None => println!("- No track currently playing on {}", name),
+    match get_speaker(name).await {
+        Some(speaker) => match speaker.track().await? {
+                Some(track_info) => {println!("- Currently playing '{}", track_info.track()); Ok(())},
+                None => {println!("- No track currently playing"); Ok(())},
+        },
+        None => {speaker_not_found(); Ok(())} 
     }
-    Ok(())
 }
 
 async fn volume(name: String) -> Result<(), sonor::Error> {
-    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
-        .expect("room exists");
-    match speaker.volume().await {
-        Ok(vol) => println!("The volume is currently at {} on {}", vol, name),
-        Err(_) => println!("Error"),
+    match get_speaker(name).await {
+        Some(speaker) => match speaker.volume().await {
+            Ok(vol) => { println!("The volume is currently at {}", vol); Ok(())},
+            Err(err) => { eprintln!("Error: {}", err); Ok(())},
+        },
+        None => { speaker_not_found(); Ok(()) },
     }
-    Ok(())
 }
 
 async fn set_volume(name: String, volume: u16) -> Result<(), sonor::Error> {
@@ -319,13 +319,18 @@ async fn set_volume(name: String, volume: u16) -> Result<(), sonor::Error> {
 }
 
 async fn queue(name: String) -> Result<(), sonor::Error> {
-    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
-        .expect("room exists");
-    match speaker.queue().await {
-        Ok(q) => for (i,t) in q.iter().enumerate() { println!("{}. {}", i, t.title()) },
-        Err(_) => println!("Empty Queue"),
+    match get_speaker(name).await {
+        Some(speaker) => match speaker.queue().await {
+            Ok(q) => {
+                for (i,t) in q.iter().enumerate() {
+                    println!("{}. {}", i, t.title())
+                }
+                Ok(())
+            },
+            Err(err) => { eprintln!("Error: {}", err); Ok(())},
+        },
+        None => {speaker_not_found(); Ok(())}
     }
-    Ok(())
 }
 
 async fn remove_track(name: String, track_no: u32) -> Result<(), sonor::Error>{
@@ -359,67 +364,64 @@ async fn clear_queue(name: String) -> Result<(), sonor::Error> {
 async fn mute(name: String) -> Result<(), sonor::Error> {
     match get_speaker(name).await {
         Some(speaker) => match speaker.mute().await {
-            Ok(is_muted) => {
-                return speaker.set_mute(!is_muted).await;
-            },
-            Err(_) => { println!("Error: unable to check if muted"); Ok(()) },
+            Ok(is_muted) => speaker.set_mute(!is_muted).await,
+            Err(err) => { eprintln!("Error: {}", err); Ok(()) },
         },
         None => { speaker_not_found(); Ok(()) },
     }
 }
 
 async fn bass(name: String, opt: Option<i8>) -> Result<(), sonor::Error> {
-    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
-        .expect("room exists");
-    match opt {
-        Some(opt) => match speaker.set_bass(opt).await {
-            Ok(_) => println!("bass now at: {}", opt),
-            Err(_) => println!("Error: could not set bass"),
-        }
-        None => match speaker.bass().await {
-            Ok(bass) => println!("The bass is currently set at {} on {}", bass, name),
-            Err(_) => println!("Error: could not get bass"),
-        }
+    match get_speaker(name).await {
+        Some(speaker) => match opt {
+            Some(opt) => match speaker.set_bass(opt).await {
+                Ok(_) => { println!("bass now at: {}", opt); Ok(())},
+                Err(err) => { eprintln!("Error: {}", err); Ok(())},
+            }
+            None => match speaker.bass().await {
+                Ok(bass) => { println!("The bass is currently set at {}", bass); Ok(()) },
+                Err(err) => { eprintln!("Error: {}", err); Ok(()) },
+            }
+        },
+        None => {speaker_not_found(); Ok(()) }
     }
-    Ok(())
 }
 
 async fn treble(name: String, opt: Option<i8>) -> Result<(), sonor::Error> {
-    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
-        .expect("room exists");
-    match opt {
-        Some(opt) => match speaker.set_treble(opt).await {
-            Ok(_) => println!("treble now at: {}", opt),
-            Err(_) => println!("Error: could not set treble"),
-        }
-        None => match speaker.treble().await {
-            Ok(bass) => println!("The treble is currently set at {} on {}", bass, name),
-            Err(_) => println!("Error: could not get treble"),
-        }
+    match get_speaker(name).await {
+        Some(speaker) => match opt {
+            Some(opt) => match speaker.set_treble(opt).await {
+                Ok(_) => { println!("treble now at: {}", opt); Ok(()) },
+                Err(err) => { eprintln!("Error: {}", err); Ok(()) },
+            }
+            None => match speaker.treble().await {
+                Ok(bass) => { println!("The treble is currently set at {}", bass); Ok(())},
+                Err(err) => { eprintln!("Error: {}", err); Ok(())},
+            }
+        },
+        None => { speaker_not_found(); Ok(()) }
     }
-    Ok(())
 }
 
 async fn loudness(name: String) -> Result<(), sonor::Error> {
-    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
-        .expect("room exists");
-    match speaker.loudness().await {
-        Ok(is_loudness) => {
-            return speaker.set_loudness(!is_loudness).await;
+    match get_speaker(name).await {
+        Some(speaker) => match speaker.loudness().await {
+            Ok(is_loudness) => speaker.set_loudness(!is_loudness).await,
+            Err(err) => { eprintln!("Error: {}", err); Ok(())},
         },
-        Err(_) => println!("Error: unable to get loudness"),
+        None => { speaker_not_found(); Ok(()) }
     }
-    Ok(())
 }
 
 async fn shuffle(name: String) -> Result<(), sonor::Error> {
-    let speaker = sonor::find(&name, Duration::from_secs(2)).await?
-        .expect("room exists");
-    match speaker.shuffle().await {
-        Ok(on_shuffle) => return speaker.set_shuffle(!on_shuffle).await,
-        Err(_) => println!("Error: unable to get shuffle mode"),
+    match get_speaker(name).await {
+        Some(speaker) => match speaker.shuffle().await {
+            Ok(on_shuffle) => speaker.set_shuffle(!on_shuffle).await,
+            Err(err) => { eprintln!("Error: {}", err); Ok(())},
+        },
+        None => {speaker_not_found(); Ok(())}
     }
-    Ok(())
+
 }
 
 async fn repeat_all(name: String) -> Result<(), sonor::Error> {
