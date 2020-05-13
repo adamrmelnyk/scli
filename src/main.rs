@@ -196,6 +196,13 @@ enum Command {
     SkipTo {
         name: String,
         seconds: u32,
+    },
+    #[structopt(
+        about = "Sets crossfade on if off, crossfade off if on",
+        help = "USAGE: crossfade MyRoomName",
+    )]
+    Crossfade {
+        name: String,
     }
 }
 
@@ -229,6 +236,7 @@ async fn main() -> Result<(), sonor::Error> {
         Command::Leave { name } => leave(name).await,
         Command::Skip { name, seconds } => skip(name, seconds).await,
         Command::SkipTo { name, seconds } => skip_to(name, seconds).await,
+        Command::Crossfade { name } => crossfade(name).await,
     }
 }
 
@@ -366,6 +374,16 @@ async fn mute(name: String) -> Result<(), sonor::Error> {
         Some(speaker) => match speaker.mute().await {
             Ok(is_muted) => speaker.set_mute(!is_muted).await,
             Err(err) => { eprintln!("Error: {}", err); Ok(()) },
+        },
+        None => { speaker_not_found(); Ok(()) },
+    }
+}
+
+async fn crossfade(name: String)-> Result<(), sonor::Error> {
+    match get_speaker(name).await {
+        Some(speaker) => match speaker.crossfade().await {
+            Ok(crossfade_on) => speaker.set_crossfade(!crossfade_on).await,
+            Err(err) => { eprintln!("Error {}", err); Ok(()) },
         },
         None => { speaker_not_found(); Ok(()) },
     }
