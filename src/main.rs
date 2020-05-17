@@ -3,6 +3,7 @@ use std::time::Duration;
 use structopt::StructOpt;
 use sonor::Speaker;
 use sonor::RepeatMode;
+use exitcode::IOERR;
 
 #[derive(StructOpt)]
 #[structopt(rename_all = "kebab-case")]
@@ -313,7 +314,7 @@ async fn volume(name: String) -> Result<(), sonor::Error> {
     match get_speaker(name).await {
         Some(speaker) => match speaker.volume().await {
             Ok(vol) => { println!("The volume is currently at {}", vol); Ok(())},
-            Err(err) => { eprintln!("Error: {}", err); Ok(())},
+            Err(err) => { eprintln!("Error: {}", err); std::process::exit(IOERR)},
         },
         None => { speaker_not_found(); Ok(()) },
     }
@@ -335,7 +336,7 @@ async fn queue(name: String) -> Result<(), sonor::Error> {
                 }
                 Ok(())
             },
-            Err(err) => { eprintln!("Error: {}", err); Ok(())},
+            Err(err) => { eprintln!("Error: {}", err); std::process::exit(IOERR)},
         },
         None => {speaker_not_found(); Ok(())}
     }
@@ -373,7 +374,7 @@ async fn mute(name: String) -> Result<(), sonor::Error> {
     match get_speaker(name).await {
         Some(speaker) => match speaker.mute().await {
             Ok(is_muted) => speaker.set_mute(!is_muted).await,
-            Err(err) => { eprintln!("Error: {}", err); Ok(()) },
+            Err(err) => { eprintln!("Error: {}", err); std::process::exit(IOERR) },
         },
         None => { speaker_not_found(); Ok(()) },
     }
@@ -383,7 +384,7 @@ async fn crossfade(name: String)-> Result<(), sonor::Error> {
     match get_speaker(name).await {
         Some(speaker) => match speaker.crossfade().await {
             Ok(crossfade_on) => speaker.set_crossfade(!crossfade_on).await,
-            Err(err) => { eprintln!("Error {}", err); Ok(()) },
+            Err(err) => { eprintln!("Error {}", err); std::process::exit(IOERR)},
         },
         None => { speaker_not_found(); Ok(()) },
     }
@@ -394,11 +395,11 @@ async fn bass(name: String, opt: Option<i8>) -> Result<(), sonor::Error> {
         Some(speaker) => match opt {
             Some(opt) => match speaker.set_bass(opt).await {
                 Ok(_) => { println!("bass now at: {}", opt); Ok(())},
-                Err(err) => { eprintln!("Error: {}", err); Ok(())},
+                Err(err) => { eprintln!("Error: {}", err); std::process::exit(IOERR)},
             }
             None => match speaker.bass().await {
                 Ok(bass) => { println!("The bass is currently set at {}", bass); Ok(()) },
-                Err(err) => { eprintln!("Error: {}", err); Ok(()) },
+                Err(err) => { eprintln!("Error: {}", err); std::process::exit(IOERR)},
             }
         },
         None => {speaker_not_found(); Ok(()) }
@@ -410,11 +411,11 @@ async fn treble(name: String, opt: Option<i8>) -> Result<(), sonor::Error> {
         Some(speaker) => match opt {
             Some(opt) => match speaker.set_treble(opt).await {
                 Ok(_) => { println!("treble now at: {}", opt); Ok(()) },
-                Err(err) => { eprintln!("Error: {}", err); Ok(()) },
+                Err(err) => { eprintln!("Error: {}", err); std::process::exit(IOERR)},
             }
             None => match speaker.treble().await {
                 Ok(bass) => { println!("The treble is currently set at {}", bass); Ok(())},
-                Err(err) => { eprintln!("Error: {}", err); Ok(())},
+                Err(err) => { eprintln!("Error: {}", err); std::process::exit(IOERR)},
             }
         },
         None => { speaker_not_found(); Ok(()) }
@@ -425,7 +426,7 @@ async fn loudness(name: String) -> Result<(), sonor::Error> {
     match get_speaker(name).await {
         Some(speaker) => match speaker.loudness().await {
             Ok(is_loudness) => speaker.set_loudness(!is_loudness).await,
-            Err(err) => { eprintln!("Error: {}", err); Ok(())},
+            Err(err) => { eprintln!("Error: {}", err); std::process::exit(IOERR)},
         },
         None => { speaker_not_found(); Ok(()) }
     }
@@ -435,7 +436,7 @@ async fn shuffle(name: String) -> Result<(), sonor::Error> {
     match get_speaker(name).await {
         Some(speaker) => match speaker.shuffle().await {
             Ok(on_shuffle) => speaker.set_shuffle(!on_shuffle).await,
-            Err(err) => { eprintln!("Error: {}", err); Ok(())},
+            Err(err) => { eprintln!("Error: {}", err); std::process::exit(IOERR)},
         },
         None => {speaker_not_found(); Ok(())}
     }
@@ -470,7 +471,7 @@ async fn join(name: String, speaker_to_join: String) -> Result<(), sonor::Error>
                 println!("joined {}: {}", speaker_to_join, joined);
                 return Ok(());
             }
-            Err(_) => Ok(()),
+            Err(err) => {eprintln!("Error: {}", err); std::process::exit(IOERR)},
         },
         None => Ok(()),
     }
